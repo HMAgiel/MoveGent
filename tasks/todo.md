@@ -26,18 +26,18 @@
 - [x] `streamlit run main.py` shows filmstrip header + scene cards
 - [x] Human reviews, then merge to `dev`
 
-- [ ] Task 5: Sticky credits sidebar — "Carte Credits" panel: Cast (routed agents), Footage (tokens), Budget (cost) from the last assistant message
+- [x] Task 5: Sticky credits sidebar — "Carte Credits" panel: Cast (routed agents), Footage (tokens), Budget (cost) from the last assistant message
       Acceptance: panel populates after a run; shows empty-state copy before the first run
       Deps: Task 4
 
-- [ ] Task 6: Session controls — mono session-id chip + "Reset conversation" button
+- [x] Task 6: Session controls — mono session-id chip + "Reset conversation" button
       Acceptance: reset clears messages and re-rolls session id; chip shows current id
       Deps: Task 5
 
 ### Checkpoint: Phase 3 (branch `feature/ui-credits-sidebar`)
-- [ ] `python -m py_compile main.py` passes
-- [ ] `streamlit run main.py` shows sidebar credits after a chat run
-- [ ] Human reviews, then merge to `dev`
+- [x] `python -m py_compile main.py` passes
+- [x] `streamlit run main.py` shows sidebar credits after a chat run
+- [x] Human reviews, then merge to `dev`
 
 - [ ] Task 7: REC indicator — pulsing `● REC · Directing…` placeholder while `run_chatbot` executes
       Acceptance: pulse visible during processing only; no animation under `prefers-reduced-motion`
