@@ -1,0 +1,102 @@
+/* ==========================================================================
+   MovGent — Cinematic UI
+   Palet "projection room": film color grade (teal-orange) di atas charcoal
+   biru gelap. Type: Bebas Neue (display), Manrope (body), IBM Plex Mono (data).
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --ink: #0E1217;
+  --panel: #161C24;
+  --panel-2: #1B2230;
+  --line: #222A36;
+  --text: #E7EAEE;
+  --muted: #8B95A5;
+  --amber: #F2A93B;
+  --teal: #5FB3B0;
+  --red: #E5484D;
+  --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-body: 'Manrope', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+}
+
+/* --- Base app ---------------------------------------------------------- */
+
+[data-testid="stAppViewContainer"] {
+  background-color: var(--ink);
+  background-image:
+    radial-gradient(1200px 500px at 80% -10%, rgba(95, 179, 176, 0.05), transparent 60%),
+    radial-gradient(1000px 500px at 10% 110%, rgba(242, 169, 59, 0.04), transparent 60%);
+  color: var(--text);
+}
+
+html, body, [class*="css"] {
+  font-family: var(--font-body);
+}
+
+.stApp {
+  background-color: var(--ink);
+}
+
+[data-testid="stMainBlockContainer"] {
+  max-width: 760px;
+  padding-top: 1rem;
+}
+
+/* --- Widget theming ------------------------------------------------------ */
+
+.stButton > button {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  transition: border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.stButton > button:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.stButton > button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+[data-testid="stCaptionContainer"] p {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* --- Scrollbar ----------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* --- Reduced motion ------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
