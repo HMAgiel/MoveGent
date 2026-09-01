@@ -1,7 +1,6 @@
 from langchain_core.tools import tool
 from chatbot.config import retrive, rerank, url_omdb, api_omdb
 import requests
-import requests
 
 
 @tool

@@ -1,11 +1,5 @@
 import os
 
-# 1. Dapatkan lokasi absolut dari folder tempat config.py ini berada (folder 'chatbot')
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# 2. Gabungkan lokasinya dengan folder data/process/nama_database_kamu.db
-db_path = os.path.join(BASE_DIR, "data", "process", "IMDB_FILM_capston3.db") # Sesuaikan nama file .db kamu
-
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from sqlalchemy import create_engine
@@ -28,7 +22,7 @@ qdrant_api = os.getenv("QDRANT_API")
 url_omdb = os.getenv("OMDB_url")
 api_omdb = os.getenv("OMDB_api_key")
 
-data_base = create_engine(f"sqlite:///{db_path}")
+data_base = create_engine(f"sqlite:////home/hasyim/movegent/chatbot/data/process/IMDB_FILM_capston3.db")
 db = SQLDatabase(data_base)
 
 def check_gpu():
@@ -43,7 +37,7 @@ embedding = OpenAIEmbeddings(
 )
 
 def model_llm(temperature=0.7):
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=temperature)
+    llm = ChatOpenAI(model="gpt-5.6-luna", temperature=temperature)
     return llm
 
 device_used=check_gpu()
@@ -53,15 +47,9 @@ rerank = CrossEncoder(
     cache_folder="chatbot/model",
 )
 
-client = QdrantClient(
-    url=url,
-    api_key=os.getenv("QDRANT_API")
-)
-
 retrive = QdrantVectorStore.from_existing_collection(
     embedding=embedding,
-    url=url,
-    api_key=os.getenv("QDRANT_API"),
+    path="/home/hasyim/movegent/chatbot/data/process/qdrant",
     collection_name="Data_IMDB"
 )
 

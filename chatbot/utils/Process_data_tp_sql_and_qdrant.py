@@ -5,7 +5,7 @@ import pandas as pd
 from uuid import uuid4
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
-from chatbot.config import embedding_model, url, qdrant_api
+from chatbot.config import embedding_model
 import os
 
 data_path = "chatbot/data/raw/imdb_top_1000.csv"
@@ -58,31 +58,3 @@ df_clean.to_sql(
 )
 
 print("Create sql sucesses ✅")
-
-documents = []
-
-for i in range(len(df)):
-    judul_film = df['Series_Title'][i]
-    overview_film = df['Overview'][i]
-    id_film = df['film_id'][i]
-    input_rag = f"Series_Title: {judul_film}, Overview: {overview_film}"
-    doc = Document(
-        page_content=input_rag,
-        metadata={
-            "film_id": id_film,
-            "Series_Title": judul_film
-        },
-    )
-    documents.append(doc)
-
-uuids = [str(uuid4()) for _ in range(len(documents))]
-
-qdrant = QdrantVectorStore.from_documents(
-    documents,
-    embedding=embedding_model(),
-    url=url,
-    api_key=qdrant_api,
-    collection_name="Data_IMDB",
-)
-    
-print("Create qdrant data sucesses ✅")

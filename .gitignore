@@ -16,3 +16,6 @@ wheels/
 #model
 model/
 model_coba/
+
+graphify-out/
+AGENTS.md

@@ -1,9 +1,5 @@
 import sys
 import os
-
-# Memaksa Python membaca direktori tempat file main.py ini berada
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 import uuid
 import streamlit as st
 from chatbot.chatbot_result import run_chatbot

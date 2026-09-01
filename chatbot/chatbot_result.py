@@ -5,11 +5,12 @@ from langfuse import get_client, propagate_attributes
 from langchain_core.messages import HumanMessage, AIMessage
 from langfuse.langchain import CallbackHandler
 from dotenv import load_dotenv
-from chatbot.graph.graph import app as langgraph_app
+from chatbot.graph.graph import app
 
 load_dotenv()
 langfuse = get_client()
 
+langgraph_app = app
 def run_chatbot(chat_history: list) -> dict:
     session_id = st.session_state.session_id
 
