@@ -1,17 +1,17 @@
 # Todo: MovGent Cinematic UI Redesign
 
-- [ ] Task 1: Write `tasks/plan.md` + `tasks/todo.md`
+- [x] Task 1: Write `tasks/plan.md` + `tasks/todo.md`
       Acceptance: both files exist and match the agreed 4-phase plan
       Deps: None
 
-- [ ] Task 2: Theme foundation — `.streamlit/config.toml`, `style.css` (palette, fonts, variables), CSS injection in `main.py`
+- [x] Task 2: Theme foundation — `.streamlit/config.toml`, `style.css` (palette, fonts, variables), CSS injection in `main.py`
       Acceptance: dark ink background, Bebas Neue/Manrope/IBM Plex Mono loaded, widgets use amber primary
       Deps: Task 1
 
 ### Checkpoint: Phase 1 (branch `feature/ui-theme-foundation`)
-- [ ] `python -m py_compile main.py` passes
-- [ ] `streamlit run main.py` shows themed dark app
-- [ ] Human reviews, then merge to `dev`
+- [x] `python -m py_compile main.py` passes
+- [x] `streamlit run main.py` shows themed dark app
+- [x] Human reviews, then merge to `dev`
 
 - [ ] Task 3: Filmstrip sprocket header — MOVGENT wordmark + "NOW SHOWING · MOVIE AGENT" eyebrow
       Acceptance: header band with sprocket holes renders across the top, display face used with restraint
