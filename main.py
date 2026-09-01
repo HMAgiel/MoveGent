@@ -5,6 +5,10 @@ from pathlib import Path
 import streamlit as st
 from chatbot.chatbot_result import run_chatbot
 
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 st.set_page_config(
     page_title="MovGent — Movie Agent",
     page_icon="🎬",
@@ -94,14 +98,16 @@ def render_sidebar() -> None:
 
 
 load_css()
-render_header()
-render_sidebar()
 
+# Inisialisasi session state SEBELUM render apa pun yang membacanya
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+render_header()
+render_sidebar()
 
 # Tampilkan riwayat chat
 frame_count = 0
@@ -186,3 +192,6 @@ if prompt:
         "total_tokens": total_tokens,
         "cost": cost_in_dollars
     })
+
+
+render_sidebar()
