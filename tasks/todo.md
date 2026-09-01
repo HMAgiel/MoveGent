@@ -39,19 +39,19 @@
 - [x] `streamlit run main.py` shows sidebar credits after a chat run
 - [x] Human reviews, then merge to `dev`
 
-- [ ] Task 7: REC indicator — pulsing `● REC · Directing…` placeholder while `run_chatbot` executes
+- [x] Task 7: REC indicator — pulsing `● REC · Directing…` placeholder while `run_chatbot` executes
       Acceptance: pulse visible during processing only; no animation under `prefers-reduced-motion`
       Deps: Task 6
 
-- [ ] Task 8: Empty-state invitation + 3 example-question chips (clicking starts a chat)
+- [x] Task 8: Empty-state invitation + 3 example-question chips (clicking starts a chat)
       Acceptance: empty chat shows invitation + working chips; chips disappear after first message
       Deps: Task 7
 
-- [ ] Task 9: Polish pass — amber hover glow on scene cards, visible keyboard focus everywhere, mobile responsive check
+- [x] Task 9: Polish pass — amber hover glow on scene cards, visible keyboard focus everywhere, mobile responsive check
       Acceptance: all interactive elements have visible focus; layout holds on mobile
       Deps: Task 8
 
 ### Checkpoint: Complete (branch `feature/ui-interactions`)
-- [ ] `python -m py_compile main.py` passes
-- [ ] `streamlit run main.py` — full flow: empty state → chips → REC pulse → scene card + credits sidebar
-- [ ] Human reviews, then merge to `dev`
+- [x] `python -m py_compile main.py` passes
+- [x] `streamlit run main.py` — full flow: empty state → chips → REC pulse → scene card + credits sidebar
+- [x] Human reviews, then merge to `dev`
