@@ -91,6 +91,141 @@ html, body, [class*="css"] {
   background: var(--muted);
 }
 
+/* --- Marquee / filmstrip header ------------------------------------------ */
+
+.marquee {
+  margin: 0 0 1.5rem;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.45));
+}
+
+.marquee-sprockets {
+  height: 12px;
+  background-color: var(--panel-2);
+  background-image: radial-gradient(circle at 12px center, var(--ink) 4.5px, transparent 5px);
+  background-size: 24px 12px;
+  background-repeat: repeat-x;
+  border: 1px solid var(--line);
+}
+
+.marquee-sprockets:first-child {
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.marquee-sprockets:last-child {
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+
+.marquee-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding: 0.85rem 1.25rem 0.75rem;
+  background: linear-gradient(180deg, var(--panel) 0%, #131926 100%);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.marquee-wordmark {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  color: var(--text);
+}
+
+.marquee-wordmark::first-letter {
+  color: var(--amber);
+}
+
+.marquee-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 0.15rem;
+}
+
+/* --- Chat screen: letterbox framing ------------------------------------- */
+
+[data-testid="stChatMessage"] {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin: 0.9rem 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+[data-testid="stChatMessage"] [data-testid="stChatMessageAvatar"] {
+  display: none;
+}
+
+[data-testid="stChatMessage"] [data-testid="stChatMessageContent"] {
+  width: 100%;
+  padding: 0;
+}
+
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarCustom"]) {
+  position: relative;
+  border-left: 3px solid var(--amber);
+}
+
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+  margin-left: auto;
+  max-width: 78%;
+  background: rgba(95, 179, 176, 0.09);
+  border: 1px solid rgba(95, 179, 176, 0.35);
+  border-left: 3px solid var(--teal);
+}
+
+.scene-tag {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--line);
+  text-transform: uppercase;
+}
+
+/* --- Chat input: projection gate ----------------------------------------- */
+
+[data-testid="stChatInput"] {
+  background: transparent;
+}
+
+[data-testid="stChatInput"] > div {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+[data-testid="stChatInput"] textarea {
+  font-family: var(--font-body);
+  color: var(--text);
+}
+
+[data-testid="stChatInput"]:focus-within > div {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 1px var(--amber), 0 0 18px rgba(242, 169, 59, 0.15);
+}
+
+/* --- Expander (sementara, akan pindah ke sidebar) ------------------------- */
+
+[data-testid="stExpander"] {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+  font-size: 0.85rem;
+}
+
 /* --- Reduced motion ------------------------------------------------------ */
 
 @media (prefers-reduced-motion: reduce) {
