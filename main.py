@@ -43,8 +43,59 @@ def render_scene_tag(frame_no: int) -> None:
     )
 
 
+def render_sidebar() -> None:
+    """Sidebar: kartu kredit (run terakhir) + chip sesi + tombol reset."""
+    with st.sidebar:
+        last_run = next(
+            (m for m in reversed(st.session_state.messages)
+             if m["role"] == "assistant" and "routing" in m),
+            None,
+        )
+
+        if last_run:
+            cost = last_run["cost"]
+            inner = f"""
+            <div class="credits-row">
+              <span class="credits-label">Cast</span>
+              <span class="credits-value">{last_run['routing']}</span>
+            </div>
+            <div class="credits-row">
+              <span class="credits-label">Footage</span>
+              <span class="credits-value">{last_run['in_tokens']:,} in &middot; {last_run['out_tokens']:,} out</span>
+            </div>
+            <div class="credits-row">
+              <span class="credits-label">Budget</span>
+              <span class="credits-value">${cost:.6f}</span>
+            </div>
+            """
+        else:
+            inner = '<div class="credits-empty">No run yet — ask a question below.</div>'
+
+        st.markdown(
+            f"""
+            <div class="credits-card">
+              <div class="credits-title">Carte Credits</div>
+              <div class="credits-rule"></div>
+              {inner}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f'<div class="session-chip">Session <span class="session-id">{st.session_state.session_id[:8]}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+        if st.button("Reset conversation", use_container_width=True, key="reset_conversation"):
+            st.session_state.messages = []
+            st.session_state.session_id = str(uuid.uuid4())
+            st.rerun()
+
+
 load_css()
 render_header()
+render_sidebar()
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
@@ -63,12 +114,6 @@ for msg in st.session_state.messages:
         with st.chat_message("assistant", avatar="🎬"):
             render_scene_tag(frame_count)
             st.markdown(msg["content"])
-
-            if "routing" in msg:
-                with st.expander("🎬 Carte Credits"):
-                    st.write(f"**Cast:** `{msg['routing']}`")
-                    st.write(f"**Footage:** {msg['in_tokens']} in | {msg['out_tokens']} out | {msg['total_tokens']} total")
-                    st.write(f"**Budget:** `${msg['cost']:.6f}`")
 
 # Input dari user
 if prompt := st.chat_input("Ask anything about movies…"):
@@ -96,11 +141,6 @@ if prompt := st.chat_input("Ask anything about movies…"):
 
         render_scene_tag(frame_count + 1)
         st.markdown(response_text)
-
-        with st.expander("🎬 Carte Credits"):
-            st.write(f"**Cast:** `{routing}`")
-            st.write(f"**Footage:** {in_tokens} in | {out_tokens} out | {total_tokens} total")
-            st.write(f"**Budget:** `${cost_in_dollars:.6f}`")
 
     st.session_state.messages.append({
         "role": "assistant",
