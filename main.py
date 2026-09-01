@@ -115,8 +115,35 @@ for msg in st.session_state.messages:
             render_scene_tag(frame_count)
             st.markdown(msg["content"])
 
+# Empty state + quick chips saat belum ada pesan
+prompt = None
+if not st.session_state.messages:
+    st.markdown(
+        """
+        <div class="empty-state">
+          <div class="empty-title">Lights. Camera. Action.</div>
+          <div class="empty-sub">Ask anything about movies — plots, ratings, cast, trivia.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="chip-hint">Try asking</div>', unsafe_allow_html=True)
+    chips = [
+        "Best drama of the 90s?",
+        "Top sci-fi movies by rating?",
+        "Plot of The Godfather",
+    ]
+    chip_cols = st.columns(len(chips))
+    for col, q in zip(chip_cols, chips):
+        with col:
+            if st.button(q, key=f"chip-{chips.index(q)}", use_container_width=True):
+                prompt = q
+
 # Input dari user
-if prompt := st.chat_input("Ask anything about movies…"):
+if prompt is None:
+    prompt = st.chat_input("Ask anything about movies…")
+
+if prompt:
 
     # 1. Simpan pesan user ke history Streamlit DULU
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -125,9 +152,18 @@ if prompt := st.chat_input("Ask anything about movies…"):
 
     # Panggil chatbot dan tampilkan hasilnya
     with st.chat_message("assistant", avatar="🎬"):
-        with st.spinner("Projecting…"):
-            # 2. Kirim SELURUH list messages ke backend, bukan cuma prompt
-            bot_data = run_chatbot(st.session_state.messages)
+        render_scene_tag(frame_count + 1)
+
+        # Indikator REC berdenyut selama pipeline berjalan
+        rec_placeholder = st.empty()
+        rec_placeholder.markdown(
+            '<div class="rec-indicator"><span class="rec-dot"></span> REC &middot; Directing&hellip;</div>',
+            unsafe_allow_html=True,
+        )
+
+        # 2. Kirim SELURUH list messages ke backend, bukan cuma prompt
+        bot_data = run_chatbot(st.session_state.messages)
+        rec_placeholder.empty()
 
         response_text = bot_data["response"]
         routing = bot_data["routing"]
@@ -139,7 +175,6 @@ if prompt := st.chat_input("Ask anything about movies…"):
         PRICE_PER_1M_OUTPUT = 0.60
         cost_in_dollars = (in_tokens / 1_000_000 * PRICE_PER_1M_INPUT) + (out_tokens / 1_000_000 * PRICE_PER_1M_OUTPUT)
 
-        render_scene_tag(frame_count + 1)
         st.markdown(response_text)
 
     st.session_state.messages.append({
