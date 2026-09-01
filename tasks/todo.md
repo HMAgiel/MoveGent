@@ -13,18 +13,18 @@
 - [x] `streamlit run main.py` shows themed dark app
 - [x] Human reviews, then merge to `dev`
 
-- [ ] Task 3: Filmstrip sprocket header — MOVGENT wordmark + "NOW SHOWING · MOVIE AGENT" eyebrow
+- [x] Task 3: Filmstrip sprocket header — MOVGENT wordmark + "NOW SHOWING · MOVIE AGENT" eyebrow
       Acceptance: header band with sprocket holes renders across the top, display face used with restraint
       Deps: Task 2
 
-- [ ] Task 4: Letterboxed chat screen + scene cards — assistant messages numbered `🎬 001…`, teal right-aligned user bubbles
+- [x] Task 4: Letterboxed chat screen + scene cards — assistant messages numbered `🎬 001…`, teal right-aligned user bubbles
       Acceptance: full history replays as framed scene cards in sequence; framing intact at ~360px width
       Deps: Task 3
 
 ### Checkpoint: Phase 2 (branch `feature/ui-chat-screen`)
-- [ ] `python -m py_compile main.py` passes
-- [ ] `streamlit run main.py` shows filmstrip header + scene cards
-- [ ] Human reviews, then merge to `dev`
+- [x] `python -m py_compile main.py` passes
+- [x] `streamlit run main.py` shows filmstrip header + scene cards
+- [x] Human reviews, then merge to `dev`
 
 - [ ] Task 5: Sticky credits sidebar — "Carte Credits" panel: Cast (routed agents), Footage (tokens), Budget (cost) from the last assistant message
       Acceptance: panel populates after a run; shows empty-state copy before the first run
