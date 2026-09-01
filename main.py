@@ -1,14 +1,24 @@
 import sys
 import os
 import uuid
+from pathlib import Path
 import streamlit as st
 from chatbot.chatbot_result import run_chatbot
 
 st.set_page_config(
-    page_title="Chatbot Film",
-    page_icon="🤖",
+    page_title="MovGent — Movie Agent",
+    page_icon="🎬",
     layout="centered",
 )
+
+
+def load_css() -> None:
+    """Muat style.css sekali lalu suntikkan ke halaman."""
+    css = (Path(__file__).parent / "style.css").read_text(encoding="utf-8")
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+
+load_css()
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
