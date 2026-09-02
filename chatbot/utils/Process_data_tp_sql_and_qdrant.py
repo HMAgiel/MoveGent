@@ -1,60 +1,66 @@
-from sqlalchemy import MetaData
-from sqlalchemy import Table, Column, Integer, String, Float, text
-from sqlalchemy import create_engine
-import pandas as pd
+from sqlalchemy import Column, Float, Integer, MetaData, String, Table, create_engine, text
 from uuid import uuid4
-from langchain_core.documents import Document
-from langchain_qdrant import QdrantVectorStore
-from chatbot.config import embedding_model
-import os
 
-data_path = "chatbot/data/raw/imdb_top_1000.csv"
-df = pd.read_csv(data_path)
+from chatbot.config import DATABASE_PATH
+from chatbot.utils.Vectore_database import make_vectore
+from chatbot.utils.data_cleaning import dataframe_for_sql, prepare_movies_dataframe
 
-df=df.replace({'Released_Year': 'PG'}, None)
+RAW_CSV_PATH = "chatbot/data/raw/imdb_top_1000.csv"
 
-df['Gross'] = df['Gross'].str.replace(',', '', regex=True)
 
-df[['Released_Year','Gross']] = df[['Released_Year','Gross']].apply(pd.to_numeric)
+def build_movies_table(metadata_obj):
+    """Definisikan tabel FILM_TABEL sesuai skema asli."""
+    return Table(
+        "FILM_TABEL",
+        metadata_obj,
+        Column("film_id", String, primary_key=True, default=lambda: str(uuid4())),
+        Column("Series_Title", String, nullable=False),
+        Column("Released_Year", Float),
+        Column("Certificate", String),
+        Column("Runtime", String),
+        Column("Genre", String),
+        Column("IMDB_Rating", Float),
+        Column("Meta_score", Float),
+        Column("Director", String),
+        Column("Star1", String),
+        Column("Star2", String),
+        Column("Star3", String),
+        Column("Star4", String),
+        Column("No_of_Votes", Integer),
+        Column("Gross", Float),
+        Column("Poster_Link", String),
+        extend_existing=True,
+    )
 
-df['film_id'] = [str(uuid4()) for _ in range(len(df['Series_Title']))]
 
-df_clean = df.drop(columns="Overview")
+def create_sqlite_database(csv_path: str = RAW_CSV_PATH):
+    """Bangun database SQLite FILM_TABEL dari CSV film (drop table lama dulu)."""
+    df = prepare_movies_dataframe(csv_path)
+    df_clean = dataframe_for_sql(df)
+    engine = create_engine(f"sqlite:///{DATABASE_PATH}")
 
-engine = create_engine('sqlite:////chatbot/data/process/IMDB_FILM_capston3.db')
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS FILM_TABEL"))
 
-with engine.begin() as conn:
-    conn.execute(text("DROP TABLE IF EXISTS FILM_TABEL"))
-    
-metadata_obj = MetaData()
+    metadata_obj = MetaData()
+    build_movies_table(metadata_obj)
 
-FILM = Table(
-    "FILM_TABEL",
-    metadata_obj,
-    Column("film_id", String, primary_key=True, default=lambda: str(uuid4())),
-    Column("Series_Title", String, nullable=False),
-    Column("Released_Year", Float),
-    Column("Certificate", String),
-    Column("Runtime", String),
-    Column("Genre", String),
-    Column("IMDB_Rating", Float),
-    Column("Meta_score", Float),
-    Column("Director", String),
-    Column("Star1", String),
-    Column("Star2", String),
-    Column("Star3", String),
-    Column("Star4", String),
-    Column("No_of_Votes", Integer),
-    Column("Gross", Float),
-    Column("Poster_Link", String),
-    extend_existing=True
-)
+    df_clean.to_sql(
+        name="FILM_TABEL",
+        con=engine,
+        if_exists="append",
+        index=False,
+    )
 
-df_clean.to_sql(
-    name='FILM_TABEL',
-    con=engine,
-    if_exists='append',
-    index=False
-)
+    return engine
 
-print("Create sql sucesses ✅")
+
+def main():
+    """ETL penuh: CSV -> SQLite (FILM_TABEL) + Qdrant (Data_IMDB)."""
+    create_sqlite_database()
+    make_vectore(RAW_CSV_PATH)
+    print("Create sql sucesses ✅")
+
+
+if __name__ == "__main__":
+    main()
