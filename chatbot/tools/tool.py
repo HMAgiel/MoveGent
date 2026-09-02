@@ -6,22 +6,21 @@ import requests
 
 
 @tool
-def RAG_tool(query: str) -> str:
+def RAG_tool(query: str) -> list[str]:
     """This tools is used to call data from Qdrant based on user query"""
     retrive = get_retrive()
     rerank = get_rerank()
     results = retrive.similarity_search(query=query)
     hasil_rag = [result.page_content for result in results]
     reranking = rerank.rank(
-    query, 
-    hasil_rag,
-    return_documents=True, 
-    top_k=3
+        query,
+        hasil_rag,
+        return_documents=True,
+        top_k=3
     )
     context_list = [item['text'] for item in reranking]
     return context_list
-    
-tool_rag = [RAG_tool]
+
 
 @tool
 def sql_tool(query: str) -> str:
@@ -42,12 +41,10 @@ def sql_tool(query: str) -> str:
 
     return format_rows_to_markdown(columns, rows)
 
-tool_sql = [sql_tool]
-    
 
 @tool
-def OMDB_tool(film_title: str) -> str:
-    """"This tool for calling OMDB data when data from other source is null, none or NaN.
+def OMDB_tool(film_title: str) -> dict | str:
+    """This tool for calling OMDB data when data from other source is null, none or NaN.
     Input FILM_title in specific """
     
 
@@ -76,4 +73,3 @@ def OMDB_tool(film_title: str) -> str:
         
     except ValueError: # Menangkap JSONDecodeError jika bukan JSON
         return f"Error: OMDb merespon dengan format yang salah (bukan JSON). Response text: {response.text[:100]}"
-tool_omdb = [OMDB_tool]
