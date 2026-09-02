@@ -150,21 +150,34 @@ Refactor Clean Code pada folder `chatbot/` (982 baris). Keputusan kunci dari kli
 
 ## Phase 6 — Polish + docs + graphify
 
-_Belum dimulai. Section ini diisi setelah merge._
-
----
-
-## Template section (hapus setelah dipakai)
-
-```markdown
-## Phase N — <judul>
+**Status:** selesai, dikerjakan controller (commit `051f3c3`, `a8d2b40`). Whole-branch review: **APPROVE**.
 
 **Keputusan:**
-- ...
+- `state.py`: hapus `TypedDict` import duplikat dari `typing` (unused — `typing_extensions`
+  yang menang). Nol perubahan behavior (sebelumnya sudah di-shadow).
+- `chatbot_result.py`: buang `import uuid` yang unused (temuan reviewer final, zero-risk).
+- `AGENTS.md` di-update (lokal, gitignored): config lazy, ETL fixed, perintah pytest/dev deps,
+  guardrails di routing.py, tools via getter.
+- CODE_LORE.md final (section ini).
+
+**Whole-branch review (63b6255..HEAD, 17 commit) — verdict APPROVE:**
+- Semua 6 global constraint terverifikasi (behavior-preserving, no rename, lazy config, ETL
+  import-safe, Indonesia, pytest 29 hijau). Guardrail verbatim byte-level, temperature/messages/
+  span names identik, docstring @tool konten terjaga.
+- Tidak ada Critical/Important. Minor & deferred-minors ditriase: semua deferrable kecuali
+  fix kutip OMDB (sudah) + catatan CODE_LORE.
+- Behavioral deltas benign yang tercatat: (1) `model_llm` kini singleton per-temperature
+  (ChatOpenAI stateless — output tak berubah); (2) ETL error kini propagate (bug-fix, hanya
+  jalur script manual); (3) main() jalankan SQLite + Qdrant (sesuai nama file).
 
 **Pelajaran / gotcha:**
-- ...
+- `tracing.py` get_client() eager vs `chatbot_result.py` lazy — inkonsistensi kecil, aman
+  karena order import config→tracing; pertimbangkan uniform kalau order import berubah.
+- `AgentState.data_worker` Literal tak menyertakan `"Agregasi_agent"` padahal guardrail/graph
+  me-routing ke sana — pre-existing, di luar scope.
+- TODO masa depan: `tests/__init__.py` bisa diganti pytest pythonpath config.
 
 **File yang berubah:**
-- `path/file.py` — apa yang diubah
-```
+- `chatbot/graph/state.py` — hapus import duplikat
+- `chatbot/chatbot_result.py` — hapus import uuid unused
+- `CODE_LORE.md`, `AGENTS.md` — docs final

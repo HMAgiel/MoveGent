@@ -1,4 +1,3 @@
-import uuid
 import streamlit as st
 import tiktoken
 from functools import lru_cache
