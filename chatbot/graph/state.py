@@ -1,5 +1,5 @@
 import operator
-from typing import TypedDict, List, Literal, Annotated
+from typing import List, Literal, Annotated
 from typing_extensions import TypedDict
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -17,6 +17,7 @@ class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
     RAG_result: str
     SQL_result: str
+    SQL_missing: str
     OMDB_result: str
     history: Annotated[List, operator.add]
     data_worker: Literal["RAG_agent", "SQL_agent", "OMDB_agent"]
