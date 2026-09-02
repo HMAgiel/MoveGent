@@ -38,9 +38,34 @@ Refactor Clean Code pada folder `chatbot/` (982 baris). Keputusan kunci dari kli
 - `chatbot/graph/agent.py`, `chatbot/tools/tool.py` (swap import)
 - `tests/` (3 file test + `__init__.py`)
 
-## Phase 2 — config.py lazy singleton
+## Phase 2 — config.py lazy singleton + path fix
 
-_Belum dimulai. Section ini diisi setelah merge._
+**Status:** selesai, merge ke `refractor` (commit `2fd16bd`).
+
+**Keputusan:**
+- `config.py` tidak lagi menjalankan side effects berat saat import. Resource dibuat lazy via
+  `lru_cache`: `get_db()`, `get_embeddings()`, `get_rerank()`, `get_retrive()`; `model_llm`
+  jadi lazy factory (per-temperature, `maxsize=8`).
+- Nama publik lama tetap bisa di-import (`embedding`, `rerank`, `retrive`, `db`) via module
+  `__getattr__` (PEP 562) — `from chatbot.config import X` memicu konstruksi hanya saat X
+  pertama kali diakses.
+- Path hardcoded `/home/hasyim/...` diganti konstanta `Path(__file__)` yang resolve ke lokasi
+  yang sama (db, qdrant, model). `LLM_MODEL = "gpt-5.6-luna"` konstanta.
+- `tool.py` beralih ke getter DI DALAM @tool function → import `tool.py` ringan (get_retrive/
+  get_rerank/get_db hanya terpanggil saat tool di-invoke). Alias `retrive_rag`/`rerank_model` hilang.
+- Import tak terpakai dibuang: `QdrantClient`, `SQLDatabase`, `import os` duplikat.
+
+**Pelajaran / gotcha:**
+- `import chatbot.config` masih ~12s = biaya import library (`sentence_transformers`, dsb.),
+  BUKAN side effect config — konstruksi/download/koneksi resource sudah tidak terjadi di import.
+- Module `__getattr__` membuat `from chatbot.config import embedding` tetap berfungsi untuk
+  `Vectore_database.py` (ETL, belum difix) tanpa eager-load.
+- QdrantClient mengeluarkan noise `ImportError: sys.meta_path is None` saat interpreter
+  shutdown — harmless, pre-existing.
+
+**File yang berubah:**
+- `chatbot/config.py` — lazy rewrite + path relatif
+- `chatbot/tools/tool.py` — getter di dalam tool, alias dibuang
 
 ## Phase 3 — agent.py boilerplate
 
