@@ -123,7 +123,30 @@ Refactor Clean Code pada folder `chatbot/` (982 baris). Keputusan kunci dari kli
 
 ## Phase 5 — ETL fix
 
-_Belum dimulai. Section ini diisi setelah merge._
+**Status:** selesai, merge ke `refractor` (commit `4c2cad4`).
+
+**Keputusan:**
+- Module baru `chatbot/utils/data_cleaning.py` (MURNI, tanpa import config): `prepare_movies_dataframe`
+  (PG→NaN, Gross numeric, film_id UUID), `dataframe_for_sql` (drop Overview), `build_movies_documents`
+  (Document RAG). Menghilangkan duplikasi cleaning yang ada di 2 file ETL.
+- `Process_data_tp_sql_and_qdrant.py` FIXED: import `embedding_model` (bug, tak pernah ada) →
+  `get_embeddings()`; path `sqlite:////chatbot/...` (root filesystem, bug) → `sqlite:///{DATABASE_PATH}`
+  (resolve sama dengan config); `main()` + guard `if __name__ == "__main__"` → import AMAN
+  (sebelumnya eksekusi module-level). main() = SQLite + `make_vectore` (Qdrant), sesuai nama file.
+- `Vectore_database.py`: `return print(...)` → print + `return qdrant`; error tidak ditelan
+  (try/except print dihapus); pakai `get_embeddings()` + `str(QDRANT_PATH)`.
+- `tests/test_etl.py` (6 test, tmp_path fixture) — hanya data_cleaning, tanpa env/network.
+- ETL penuh TIDAK dijalankan (drop DB + OpenAI embeddings 1000 baris = biaya). DB & qdrant intact.
+
+**Pelajaran / gotcha:**
+- `uuids = [str(uuid4()) ...]` di make_vectore dead code (tak di-pass ke `from_documents(ids=...)`) —
+  pre-existing, dipertahankan (behavior-preserving). Qdrant auto-generate vector ids.
+- Print `"sucesses"` typo dipertahankan (behavior drift tidak diizinkan di phase ini).
+
+**File yang berubah:**
+- `chatbot/utils/data_cleaning.py` (baru)
+- `chatbot/utils/Process_data_tp_sql_and_qdrant.py`, `chatbot/utils/Vectore_database.py`
+- `tests/test_etl.py` (baru)
 
 ## Phase 6 — Polish + docs + graphify
 
