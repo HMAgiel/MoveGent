@@ -1,6 +1,6 @@
 from langchain_core.tools import tool
 from sqlalchemy import text
-from chatbot.config import retrive, rerank, api_omdb, url_omdb, db
+from chatbot.config import api_omdb, url_omdb, get_db, get_rerank, get_retrive
 from chatbot.tools.markdown import format_rows_to_markdown
 import requests
 
@@ -8,11 +8,11 @@ import requests
 @tool
 def RAG_tool(query: str) -> str:
     """This tools is used to call data from Qdrant based on user query"""
-    retrive_rag = retrive
-    rerank_model = rerank
-    results = retrive_rag.similarity_search(query=query)
+    retrive = get_retrive()
+    rerank = get_rerank()
+    results = retrive.similarity_search(query=query)
     hasil_rag = [result.page_content for result in results]
-    reranking = rerank_model.rank(
+    reranking = rerank.rank(
     query, 
     hasil_rag,
     return_documents=True, 
@@ -26,6 +26,7 @@ tool_rag = [RAG_tool]
 @tool
 def sql_tool(query: str) -> str:
     """This tools is used to execute sql query"""
+    db = get_db()
     with db.connect() as conn:
         
         result = conn.execute(text(query))
