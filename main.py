@@ -91,7 +91,7 @@ def render_sidebar() -> None:
             unsafe_allow_html=True,
         )
 
-        if st.button("Reset conversation", use_container_width=True, key="reset_conversation"):
+        if st.button("Reset conversation", width="stretch", key="reset_conversation"):
             st.session_state.messages = []
             st.session_state.session_id = str(uuid.uuid4())
             st.rerun()
@@ -142,7 +142,7 @@ if not st.session_state.messages:
     chip_cols = st.columns(len(chips))
     for col, q in zip(chip_cols, chips):
         with col:
-            if st.button(q, key=f"chip-{chips.index(q)}", use_container_width=True):
+            if st.button(q, key=f"chip-{chips.index(q)}", width="stretch"):
                 prompt = q
 
 # Input dari user
@@ -168,30 +168,36 @@ if prompt:
         )
 
         # 2. Kirim SELURUH list messages ke backend, bukan cuma prompt
-        bot_data = run_chatbot(st.session_state.messages)
+        try:
+            bot_data = run_chatbot(st.session_state.messages)
+        except Exception as e:
+            print(f"⚠️ [main] run_chatbot error: {e}")
+            bot_data = None
         rec_placeholder.empty()
 
-        response_text = bot_data["response"]
-        routing = bot_data["routing"]
-        in_tokens = bot_data["input_tokens"]
-        out_tokens = bot_data["output_tokens"]
-        total_tokens = in_tokens + out_tokens
+        if bot_data is None:
+            fallback = "Maaf, terjadi kendala saat memproses pertanyaanmu. Silakan coba lagi."
+            st.markdown(fallback)
+            st.session_state.messages.append({"role": "assistant", "content": fallback})
+        else:
+            response_text = bot_data["response"]
+            routing = bot_data["routing"]
+            in_tokens = bot_data["input_tokens"]
+            out_tokens = bot_data["output_tokens"]
+            total_tokens = in_tokens + out_tokens
 
-        PRICE_PER_1M_INPUT = 0.15
-        PRICE_PER_1M_OUTPUT = 0.60
-        cost_in_dollars = (in_tokens / 1_000_000 * PRICE_PER_1M_INPUT) + (out_tokens / 1_000_000 * PRICE_PER_1M_OUTPUT)
+            PRICE_PER_1M_INPUT = 0.15
+            PRICE_PER_1M_OUTPUT = 0.60
+            cost_in_dollars = (in_tokens / 1_000_000 * PRICE_PER_1M_INPUT) + (out_tokens / 1_000_000 * PRICE_PER_1M_OUTPUT)
 
-        st.markdown(response_text)
+            st.markdown(response_text)
 
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": response_text,
-        "routing": routing,
-        "in_tokens": in_tokens,
-        "out_tokens": out_tokens,
-        "total_tokens": total_tokens,
-        "cost": cost_in_dollars
-    })
-
-
-render_sidebar()
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": response_text,
+                "routing": routing,
+                "in_tokens": in_tokens,
+                "out_tokens": out_tokens,
+                "total_tokens": total_tokens,
+                "cost": cost_in_dollars
+            })

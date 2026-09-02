@@ -197,7 +197,11 @@ html, body, [class*="css"] {
 /* --- Chat input: projection gate ----------------------------------------- */
 
 [data-testid="stChatInput"] {
-  background: transparent;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--ink);
+  padding-top: 0.6rem;
 }
 
 [data-testid="stChatInput"] > div {
