@@ -19,3 +19,7 @@ model_coba/
 
 graphify-out/
 AGENTS.md
+.agents
+.claude
+skills-lock.json
+tasks/
