@@ -95,9 +95,31 @@ Refactor Clean Code pada folder `chatbot/` (982 baris). Keputusan kunci dari kli
 - `chatbot/graph/tracing.py` (baru)
 - `chatbot/graph/agent.py` (199 baris, boilerplate dihapus)
 
-## Phase 4 — chatbot_result.py + tools/tool.py
+## Phase 4 — chatbot_result.py + tools/tool.py cleanup
 
-_Belum dimulai. Section ini diisi setelah merge._
+**Status:** selesai, merge ke `refractor` (commit `2c1cc0f`).
+
+**Keputusan:**
+- `chatbot_result.py`: `run_chatbot()` dipecah jadi helpers privat `_split_history`,
+  `_build_initial_state`, `_count_tokens`, `_extract_routing`. API & return dict
+  `{response, routing, input_tokens, output_tokens}` TIDAK berubah; `main.py` tak tersentuh.
+- langfuse client dibuat lazy via `_get_langfuse()` (`lru_cache`). `load_dotenv()` dihapus dari
+  chatbot_result (config.py sudah memanggilnya & di-import transitif).
+- Alias `langgraph_app = app` dibuang (tidak di-import pihak luar) → pakai `app` langsung.
+- `tool.py`: dead code `tool_rag`/`tool_sql`/`tool_omdb` dihapus; annotation `RAG_tool ->
+  list[str]`, `OMDB_tool -> dict | str` diperbaiki; indentasi `rerank.rank(...)` dirapikan;
+  docstring OMDB_tool kutip berlebih `""""` → `"""` (konten deskripsi LLM TIDAK diubah).
+- KUNCI: docstring @tool adalah deskripsi yang dilihat LLM — kontennya tidak boleh diubah,
+  hanya perbaikan jumlah kutip.
+
+**Pelajaran / gotcha:**
+- Token counting kini dua panggilan `_count_tokens` independen (sebelumnya satu shared
+  try/except) — identik untuk input str, divergence tepi dapat diabaikan.
+- `import uuid` di chatbot_result unused — pre-existing, bisa dibuang di future cleanup.
+
+**File yang berubah:**
+- `chatbot/chatbot_result.py` — helpers + langfuse lazy
+- `chatbot/tools/tool.py` — dead code + annotation
 
 ## Phase 5 — ETL fix
 
