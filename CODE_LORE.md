@@ -17,7 +17,26 @@ Refactor Clean Code pada folder `chatbot/` (982 baris). Keputusan kunci dari kli
 
 ## Phase 1 — Test foundation + ekstraksi pure functions
 
-_Belum dimulai. Section ini diisi setelah merge._
+**Status:** selesai, merge ke `refractor` (commit `24c0e63`).
+
+**Keputusan:**
+- Logika murni diekstrak verbatim dari agent/tool ke module side-effect-free (tanpa import config) supaya bisa di-unit-test tanpa env/network/db:
+  - `chatbot/graph/routing.py` — `apply_guardrails()` (rantai 9 cabang if/elif dari `Data_agent`, lengkap dengan print `🚨 [Guardrail]`)
+  - `chatbot/utils/sql_missing.py` — `detect_missing_sql()`
+  - `chatbot/tools/markdown.py` — `format_rows_to_markdown()`
+- `agent.py` & `tool.py` swap ke pemanggilan import (perilaku identik, tidak ada definisi duplikat).
+- Test: `tests/test_routing.py` (11 kasus — semua cabang), `test_sql_missing.py` (7), `test_markdown.py` (4) → 23 passed.
+- `tests/__init__.py` ditambah karena repo root tidak di sys.path (tanpa ini pytest gagal koleksi).
+
+**Pelajaran / gotcha:**
+- Ekstraksi "verbatim" harus benar-benar verbatim: reviewer memverifikasi byte-level (termasuk trailing space dan f-string `({sql_missing})` pada print guardrail).
+- Module pure baru TIDAK BOLEH import `chatbot.config` — config punya side effects berat di import.
+- Script `task-brief` SDD tidak bisa parse format plan (pakai `### Phase N`), jadi phase brief ditulis manual.
+
+**File yang berubah:**
+- `chatbot/graph/routing.py`, `chatbot/utils/sql_missing.py`, `chatbot/tools/markdown.py` (baru, murni)
+- `chatbot/graph/agent.py`, `chatbot/tools/tool.py` (swap import)
+- `tests/` (3 file test + `__init__.py`)
 
 ## Phase 2 — config.py lazy singleton
 
