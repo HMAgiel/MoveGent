@@ -4,7 +4,7 @@
 
 **A graph-orchestrated, multi-agent system that answers movie questions using SQL, vector search, and external APIs — powered by LangGraph, OpenAI, Qdrant, and Streamlit.**
 **To run and try the app use this link below**
-**https://capston-modul3-ai-engineer---chatbot-imdb-7u6xhbrirdvfpysd7uzl.streamlit.app/**
+**https://movegent.streamlit.app/**
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![LangChain](https://img.shields.io/badge/LangChain-1.2+-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
