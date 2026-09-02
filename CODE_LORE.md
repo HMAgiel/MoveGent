@@ -67,9 +67,33 @@ Refactor Clean Code pada folder `chatbot/` (982 baris). Keputusan kunci dari kli
 - `chatbot/config.py` — lazy rewrite + path relatif
 - `chatbot/tools/tool.py` — getter di dalam tool, alias dibuang
 
-## Phase 3 — agent.py boilerplate
+## Phase 3 — agent.py: boilerplate via tracing helper
 
-_Belum dimulai. Section ini diisi setelah merge._
+**Status:** selesai, merge ke `refractor` (commit `102bde0`).
+
+**Keputusan:**
+- Helper `chatbot/graph/tracing.py` → `llm_call(llm, messages, span_name)`: membungkus
+  `llm.invoke` dalam span langfuse (`as_type="span"`) + `CallbackHandler` di config.
+  Boilerplate langfuse × 7 agent (mulai ~40 baris/agent) dihilangkan.
+- 7 agent function di-slim: hapus `session_id` (unused), docstring literal yang salah posisi
+  (dead code) dipindah jadi docstring Bahasa Indonesia, import tak terpakai dibuang
+  (`ToolMessage`, `propagate_attributes`, `CallbackHandler`, `get_client`, `load_dotenv`).
+- `agent.py` 336 → **199 baris**. Semua temperatur, message, prompt `.format()`, cek `"N/A"`,
+  pemanggilan tool, dict return, dan span name (termasuk typo `"RAG_agnet"`) dipertahankan
+  VERBATIM. `apply_guardrails` di Data_agent tidak tersentuh.
+- Konstanta magic string: `NO_DATA_MARKER = "N/A"`, `NOT_USED_RAG/SQL/OMDB = "Tidak pake ..."`.
+
+**Pelajaran / gotcha:**
+- Consequence desain `llm_call`: span langfuse kini hanya membungkus `llm.invoke`, tidak lagi
+  membungkus tool call + pembentukan return (sebelumnya seluruh body node di dalam span).
+  Observability-only drift — diterima, tercatat sebagai minor.
+- `load_dotenv()` aman dihapus dari agent.py karena `config.py` sudah memanggilnya dan agent.py
+  import config lebih dulu.
+- Agent functions tetap signature `(state, config)` karena LangGraph memanggil node dengan 2 argumen.
+
+**File yang berubah:**
+- `chatbot/graph/tracing.py` (baru)
+- `chatbot/graph/agent.py` (199 baris, boilerplate dihapus)
 
 ## Phase 4 — chatbot_result.py + tools/tool.py
 
