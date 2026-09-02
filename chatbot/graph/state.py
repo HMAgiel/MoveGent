@@ -17,6 +17,7 @@ class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], add_messages]
     RAG_result: str
     SQL_result: str
+    SQL_missing: str
     OMDB_result: str
     history: Annotated[List, operator.add]
     data_worker: Literal["RAG_agent", "SQL_agent", "OMDB_agent"]

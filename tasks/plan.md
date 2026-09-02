@@ -1,66 +1,69 @@
-# Implementation Plan: MovGent Cinematic UI Redesign
+# Implementation Plan: OMDB Fallback — Call OMDB Only When SQL Data Is Missing
 
 ## Overview
 
-Redesign the MovGent Streamlit chat (`main.py`) into a dark, cinematic "projection room" experience: filmstrip marquee header, letterboxed chat screen with numbered scene cards, a sticky film-credits sidebar (Cast/Footage/Budget from the agent run), and orchestrated interactivity (REC pulse, quick-question chips, focus polish). No new dependencies; theming via `.streamlit/config.toml` + injected CSS.
+Fix the data pipeline so OMDb is only queried as a fallback when the SQL result actually contains NULL/missing fields (e.g. `Released_Year`, `Certificate`, `Gross`). Requires repairing `SQL_agent` (it currently generates SQL but never executes it — it calls `RAG_tool` instead), adding a deterministic missing-field detector, and re-gating the `Data_agent` guardrails so OMDB only fires on real data gaps. All work on branch `fix/omdb-invalid-url` (already created).
 
 ## Architecture Decisions
 
-- **Palette** grounded in the film color grade (teal-orange) on a blue-tinted charcoal base — deliberately not the generic "near-black + acid accent" dark default:
-  - Ink `#0E1217`, Panel `#161C24`, Line `#222A36`, Text `#E7EAEE`, Muted `#8B95A5`, Amber `#F2A93B`, Teal `#5FB3B0`
-- **Type**: Bebas Neue (display, marquee/poster caps, used with restraint), Manrope (body), IBM Plex Mono (data/session/frame numbers)
-- **Signature metaphor**: chat history as film frames — assistant replies are numbered scene cards; run details become a "Carte Credits" panel (Cast = routed agents, Footage = tokens, Budget = cost)
-- **UI copy in English** (user decision); code comments stay Indonesian per `AGENTS.md`
-- **Branching**: one `feature/ui-*` branch per phase, off `dev`, one commit, merged back to `dev` after human review — `dev` stays runnable at every checkpoint
-- **Run commands**: plain `streamlit run main.py` — `uv` is NOT used (user decision)
+- **Deterministic gating, not LLM trust**: OMDB routing is decided by a completeness check on real SQL rows (`SQL_missing`), not by the LLM's route choice. The existing anti-loop guardrail philosophy in `agent.py` (the only termination guarantee) is preserved.
+- **Missing-field detector**: parse the markdown table produced by `sql_tool` (NULL renders as empty cell). Any empty/`None`/`NaN` cell → record the column name(s) in `SQL_missing`.
+- **SQL always runs before OMDB**: `OMDB_agent` is unreachable until SQL has executed, per `Data_prompt` rule.
+- **"No results returned."** from `sql_tool` → straight to `Agregasi` (no title exists to look up in OMDb); no OMDB call.
+- New state field `SQL_missing: str` threaded through `AgentState`, `supervisor_agent`, and the `run_chatbot` invoke input.
+- Comments/log copy stay Indonesian per `AGENTS.md`.
 
 ## Task List
 
-### Phase 1: Theme foundation — branch `feature/ui-theme-foundation`
-- [ ] Task 1: Write plan/todo files (this repo)
-- [ ] Task 2: `.streamlit/config.toml` dark theme + `style.css` palette/fonts + CSS injection in `main.py`
+### Phase 1: State foundation
+- [ ] Task 1: Add `SQL_missing` to state + initializers
+      Acceptance: state schema imports; app still boots unchanged (no behavior change yet)
+      Deps: None
 
 ### Checkpoint: Phase 1
-- [ ] App loads with dark bg, correct fonts, amber-primary widgets
+- [ ] `python -m py_compile` passes on the 3 touched files
+- [ ] App loads in Streamlit unchanged
 
-### Phase 2: Filmstrip header + chat screen — branch `feature/ui-chat-screen`
-- [ ] Task 3: Sprocket-strip header (MOVGENT wordmark, "NOW SHOWING · MOVIE AGENT" eyebrow)
-- [ ] Task 4: Letterboxed chat column + scene cards with frame numbers + teal user bubbles
+### Phase 2: Real SQL execution + missing detection (core)
+- [ ] Task 2: `SQL_agent` executes SQL via `sql_tool`
+      Acceptance: `SQL_result` contains real DB rows (markdown table); `SQL_missing` lists columns with empty/NULL cells
+      Deps: Task 1
+- [ ] Task 3: `Data_agent` guardrails — OMDB only on missing data
+      Acceptance: complete-data query never calls OMDB; a film with NULL `Gross`/`Certificate` does
+      Deps: Task 2
 
 ### Checkpoint: Phase 2
-- [ ] History renders as numbered scene cards; framing holds on mobile
+- [ ] `python -m py_compile` passes
+- [ ] Chat test: "sci-fi movie with highest rating" → SQL(+RAG) → Agregasi, zero OMDB calls
+- [ ] Chat test: missing-field query → SQL → OMDB → Agregasi
+- [ ] No infinite loop (guardrail termination intact)
 
-### Phase 3: Credits sidebar — branch `feature/ui-credits-sidebar`
-- [ ] Task 5: Sticky "Carte Credits" panel (Cast/Footage/Budget from last run)
-- [ ] Task 6: Mono session-id chip + "Reset conversation" button
-
-### Checkpoint: Phase 3
-- [ ] Sidebar updates after a run; reset clears chat + session id
-
-### Phase 4: Interactivity polish — branch `feature/ui-interactions`
-- [ ] Task 7: Pulsing `● REC · Directing…` indicator during processing (respects `prefers-reduced-motion`)
-- [ ] Task 8: Empty-state invitation + 3 example-question chips
-- [ ] Task 9: Amber hover glow, focus rings, mobile responsive pass
+### Phase 3: Alignment + cleanup
+- [ ] Task 4: Prompt alignment + import cleanup
+      Acceptance: no unused imports; prompt wording matches the deterministic gate
+      Deps: Task 3
 
 ### Checkpoint: Complete
-- [ ] All acceptance criteria met; ready for review
+- [ ] All acceptance criteria met
+- [ ] Human review, then commit per phase (stage only intended files — working tree has unrelated changes)
 
 ## Verification
 
 No test suite, linter, or typecheck in this repo (`AGENTS.md`). Per task:
-1. `python -m py_compile main.py`
-2. `streamlit run main.py` — manual visual check against acceptance criteria
-3. Chat-flow checks (sidecar credits after a run) need the full stack (env, SQLite, Qdrant); layout checks work without it
+1. `python -m py_compile <touched files>`
+2. Stub-based tool checks (guardrail/detector logic without the full stack)
+3. Full chat verification needs the stack (env, SQLite, Qdrant): kill the running Streamlit (PID 17468) first — it holds the Qdrant lock
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Streamlit widget internals change between versions (`>=1.57.0`) | Med | Target stable `data-testid` selectors; keep CSS additive/overridable |
-| Chat-flow verification needs full stack (db/Qdrant/keys) | Med | Layout verified on page load alone; chat checks done once stack is up |
-| `dev` has uncommitted `.gitignore` change + untracked `skills-lock.json` | Low | Phase commits stage only UI files explicitly |
-| Google Fonts require network | Low | Streamlit app already requires network (Qdrant/OpenAI); system fonts as fallback |
+| Working tree has unrelated uncommitted changes (`.gitignore`, `agent.py`/`agent_prompt.py`/`tool.py` diffs, untracked `.claude/`, `skills-lock.json`) | Med | Stage only files belonging to each task; never `git add -A` |
+| SQL generation is LLM-driven — malformed SQL possible | Med | `sql_tool` error propagates as result text; guardrail still terminates; prompt enforces SELECT-only |
+| Streamlit instance (PID 17468) holds Qdrant lock | Low | Kill before verification runs |
+| `SQL_missing` empty when SQL never ran | Low | Guardrail rule 1 forces SQL before OMDB, so gating stays sound |
+| Old `EMPTY_RESULT` string no longer produced | Low | Keep check for backward compat; "No results returned." also handled |
 
 ## Open Questions
 
-- None (design decisions confirmed with human)
+- None — both design decisions (real SQL execution; any-NULL triggers OMDB) confirmed with human.

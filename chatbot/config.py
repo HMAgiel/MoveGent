@@ -17,13 +17,12 @@ import os
 
 load_dotenv()
 
-url = os.getenv("QDRANT_URL")
-qdrant_api = os.getenv("QDRANT_API")
-url_omdb = os.getenv("OMDB_url")
+
 api_omdb = os.getenv("OMDB_api_key")
+url_omdb = os.getenv("OMDB_url")
 
 data_base = create_engine(f"sqlite:////home/hasyim/movegent/chatbot/data/process/IMDB_FILM_capston3.db")
-db = SQLDatabase(data_base)
+db = data_base.execution_options(read_only=True)
 
 def check_gpu():
     try:

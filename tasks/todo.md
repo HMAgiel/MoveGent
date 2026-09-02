@@ -1,57 +1,63 @@
-# Todo: MovGent Cinematic UI Redesign
+# Todo: OMDB Fallback — Call OMDB Only When SQL Data Is Missing
 
-- [x] Task 1: Write `tasks/plan.md` + `tasks/todo.md`
-      Acceptance: both files exist and match the agreed 4-phase plan
+Branch: `fix/omdb-invalid-url`
+
+## Phase 1: State foundation
+
+- [ ] Task 1: Add `SQL_missing` to state + initializers
+      - `chatbot/graph/state.py`: add `SQL_missing: str` to `AgentState`
+      - `chatbot/chatbot_result.py`: add `"SQL_missing": ""` to invoke input
+      - `chatbot/graph/agent.py` `supervisor_agent` return: add `"SQL_missing": ""`
+      Acceptance: state schema imports; app still boots unchanged (no behavior change yet)
+      Verification: `python -m py_compile` on the 3 files; app loads in Streamlit
       Deps: None
+      Scope: S (3 files, trivial)
 
-- [x] Task 2: Theme foundation — `.streamlit/config.toml`, `style.css` (palette, fonts, variables), CSS injection in `main.py`
-      Acceptance: dark ink background, Bebas Neue/Manrope/IBM Plex Mono loaded, widgets use amber primary
+### Checkpoint: Phase 1
+- [ ] `python -m py_compile chatbot/graph/state.py chatbot/chatbot_result.py chatbot/graph/agent.py` passes
+- [ ] App loads in Streamlit unchanged
+- [ ] Human reviews before proceeding
+
+## Phase 2: Real SQL execution + missing detection (core)
+
+- [ ] Task 2: `SQL_agent` executes SQL via `sql_tool`
+      - Replace `RAG_tool.invoke({"query": responses.content})` with `sql_tool.invoke({"query": responses.content})`
+      - N/A fallback becomes `"Tidak pake SQL"`
+      - Add helper `detect_missing_sql(result)` → comma-joined missing column names or `""`
+      - Return `{"SQL_result": result, "SQL_missing": sql_missing}`
+      Acceptance: `SQL_result` contains real DB rows (markdown table); `SQL_missing` lists columns with empty/NULL cells
+      Verification: stub test calling `sql_tool` against the SQLite db; `python -m py_compile`
       Deps: Task 1
+      Scope: M (1 file + helper)
 
-### Checkpoint: Phase 1 (branch `feature/ui-theme-foundation`)
-- [x] `python -m py_compile main.py` passes
-- [x] `streamlit run main.py` shows themed dark app
-- [x] Human reviews, then merge to `dev`
-
-- [x] Task 3: Filmstrip sprocket header — MOVGENT wordmark + "NOW SHOWING · MOVIE AGENT" eyebrow
-      Acceptance: header band with sprocket holes renders across the top, display face used with restraint
+- [ ] Task 3: `Data_agent` guardrails — OMDB only on missing data
+      - Reordered deterministic block:
+        1. `OMDB_agent` chosen but SQL not run yet → force `SQL_agent`
+        2. SQL done, `SQL_agent` re-chosen: empty result → `Agregasi`; RAG pending → `RAG`; OMDB only if `omdb_results == ""` AND `SQL_missing != ""`; else `Agregasi`
+        3. `OMDB_agent` chosen but `SQL_missing == ""` → force `Agregasi`
+        4–6. existing RAG/OMDB anti-loop rules unchanged
+      Acceptance: complete-data query ("sci-fi movie with highest rating") never calls OMDB; a film with NULL `Gross`/`Certificate` does
+      Verification: full `streamlit run main.py` chat test against both query types
       Deps: Task 2
+      Scope: M (1 file)
 
-- [x] Task 4: Letterboxed chat screen + scene cards — assistant messages numbered `🎬 001…`, teal right-aligned user bubbles
-      Acceptance: full history replays as framed scene cards in sequence; framing intact at ~360px width
+### Checkpoint: Phase 2
+- [ ] `python -m py_compile chatbot/graph/agent.py` passes
+- [ ] Chat test: complete-data query → SQL(+RAG) → Agregasi, zero OMDB calls
+- [ ] Chat test: missing-field query → SQL → OMDB → Agregasi
+- [ ] No infinite loop (guardrail termination intact)
+- [ ] Human reviews before proceeding
+
+## Phase 3: Alignment + cleanup
+
+- [ ] Task 4: Prompt alignment + import cleanup
+      - `chatbot/prompt/agent_prompt.py` `Data_prompt` rule 2: tighten to "call OMDB only when the specific field (e.g. Released Year) is NULL/missing in SQL"
+      - Remove now-unused `db` import from `chatbot/graph/agent.py` (keep `model_llm`)
+      Acceptance: no unused imports; prompt wording matches the deterministic gate
+      Verification: `python -m py_compile`; grep confirms `sql_tool` invoked and `db` unused in agent.py
       Deps: Task 3
+      Scope: S (2 files)
 
-### Checkpoint: Phase 2 (branch `feature/ui-chat-screen`)
-- [x] `python -m py_compile main.py` passes
-- [x] `streamlit run main.py` shows filmstrip header + scene cards
-- [x] Human reviews, then merge to `dev`
-
-- [x] Task 5: Sticky credits sidebar — "Carte Credits" panel: Cast (routed agents), Footage (tokens), Budget (cost) from the last assistant message
-      Acceptance: panel populates after a run; shows empty-state copy before the first run
-      Deps: Task 4
-
-- [x] Task 6: Session controls — mono session-id chip + "Reset conversation" button
-      Acceptance: reset clears messages and re-rolls session id; chip shows current id
-      Deps: Task 5
-
-### Checkpoint: Phase 3 (branch `feature/ui-credits-sidebar`)
-- [x] `python -m py_compile main.py` passes
-- [x] `streamlit run main.py` shows sidebar credits after a chat run
-- [x] Human reviews, then merge to `dev`
-
-- [x] Task 7: REC indicator — pulsing `● REC · Directing…` placeholder while `run_chatbot` executes
-      Acceptance: pulse visible during processing only; no animation under `prefers-reduced-motion`
-      Deps: Task 6
-
-- [x] Task 8: Empty-state invitation + 3 example-question chips (clicking starts a chat)
-      Acceptance: empty chat shows invitation + working chips; chips disappear after first message
-      Deps: Task 7
-
-- [x] Task 9: Polish pass — amber hover glow on scene cards, visible keyboard focus everywhere, mobile responsive check
-      Acceptance: all interactive elements have visible focus; layout holds on mobile
-      Deps: Task 8
-
-### Checkpoint: Complete (branch `feature/ui-interactions`)
-- [x] `python -m py_compile main.py` passes
-- [x] `streamlit run main.py` — full flow: empty state → chips → REC pulse → scene card + credits sidebar
-- [x] Human reviews, then merge to `dev`
+### Checkpoint: Complete
+- [ ] All acceptance criteria met
+- [ ] Human reviews; commit per phase (stage only intended files — never `git add -A`)

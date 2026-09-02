@@ -1,13 +1,16 @@
 from chatbot.graph.state import SupervisorOutput, DataAgentOutput, AgentState
-from chatbot.config import model_llm, db
+
+from chatbot.config import model_llm
+
 from chatbot.prompt.supervisor import SUPERVISOR_PROMPT
-from chatbot.prompt.agent_prompt import RAG_prompt, omdb_prompt, Data_prompt, SQL_tambahan_prompt,agregasi_prompt, Basic_prompt
-from chatbot.tools.tool import RAG_tool, OMDB_tool
+from chatbot.prompt.agent_prompt import RAG_prompt, omdb_prompt, Data_prompt, agregasi_prompt, Basic_prompt, SQL_PROMPT, SQL_SCHEMA
+
+from chatbot.tools.tool import RAG_tool, OMDB_tool, sql_tool
+
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
-from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
-from langchain.agents import create_agent
-from langchain_classic import hub
+
+
 from langfuse import get_client, propagate_attributes
 from langfuse.langchain import CallbackHandler
 from dotenv import load_dotenv
@@ -49,6 +52,7 @@ def supervisor_agent(state: AgentState, config: RunnableConfig) -> AgentState:
         return {
             "next_worker": main_route,
             "SQL_result": "",
+            "SQL_missing": "",
             "RAG_result": "",
             "OMDB_result": ""
         }       
@@ -90,20 +94,30 @@ def Data_agent(state: AgentState, config: RunnableConfig) -> AgentState:
         
         data_route = result.get("data_worker", "Agregasi_agent")
         butuh_rag = result.get("needs_overview", False)
-   
-        if sql_results != "" and data_route == "SQL_agent":
-            if "EMPTY_RESULT" in sql_results: 
+        sql_missing = state.get("SQL_missing", "")
+
+        if data_route == "OMDB_agent" and sql_results == "":
+            print("🚨 [Guardrail] OMDB dipilih tapi SQL belum jalan. Memaksa ke SQL_agent dulu.")
+            data_route = "SQL_agent"
+
+        elif sql_results != "" and data_route == "SQL_agent":
+            if "No results returned." in sql_results or "EMPTY_RESULT" in sql_results: 
                 print("🚨 [Guardrail] Data kosong di SQL. Memaksa pindah ke Agregasi_agent.")
                 data_route = "Agregasi_agent"
             else:
                 if butuh_rag == True and rag_results == "":
                     print("🚨 [Guardrail] SQL selesai. Memaksa lanjut ke RAG_agent untuk overview.")
                     data_route = "RAG_agent"
-                elif omdb_results == "":
-                    print("🚨 [Guardrail] SQL selesai. Lanjut cari detail tambahan ke OMDB_agent.")
+                elif omdb_results == "" and sql_missing != "":
+                    print(f"🚨 [Guardrail] SQL selesai tapi ada data NULL ({sql_missing}). Lanjut ke OMDB_agent.")
                     data_route = "OMDB_agent"
                 else:
+                    print("🚨 [Guardrail] SQL selesai dan data lengkap. Memaksa pindah ke Agregasi_agent.")
                     data_route = "Agregasi_agent"
+
+        elif data_route == "OMDB_agent" and sql_missing == "":
+            print("🚨 [Guardrail] OMDB dipilih tapi data SQL lengkap. Memaksa pindah ke Agregasi_agent.")
+            data_route = "Agregasi_agent"
 
         elif butuh_rag == True and rag_results == "" and data_route in ["Agregasi_agent", "OMDB_agent"]:
             print("🚨 [Guardrail] Tunggu! User butuh overview, RAG belum jalan. Memaksa pindah ke RAG_agent.")
@@ -160,6 +174,22 @@ def RAG_agent(state: AgentState, config: RunnableConfig) -> AgentState:
             "RAG_result": result
         }
         
+def detect_missing_sql(result: str) -> str:
+    """Deteksi kolom dengan nilai kosong/NULL/NaN pada hasil tabel markdown sql_tool."""
+    if not result or "No results returned." in result:
+        return ""
+    lines = [line for line in result.splitlines() if line.startswith("|")]
+    if len(lines) < 2:
+        return ""
+    headers = [h.strip() for h in lines[0].strip("|").split("|")]
+    missing = set()
+    for line in lines[2:]:
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        for header, value in zip(headers, cells):
+            if value in ("", "None", "NULL", "NaN", "nan"):
+                missing.add(header)
+    return ", ".join(sorted(missing)) if missing else ""
+
 def SQL_agent(state: AgentState, config: RunnableConfig) -> AgentState:
     llm = model_llm(temperature=0.1)
     session_id = config.get("configurable", {}).get("session_id", "default")
@@ -167,64 +197,31 @@ def SQL_agent(state: AgentState, config: RunnableConfig) -> AgentState:
     with langfuse.start_as_current_observation(name="SQL_agent", as_type="span"):
         handler = CallbackHandler()
 
-        toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-        SQL_tools = toolkit.get_tools()
-        tools_map = {tool.name: tool for tool in SQL_tools}
-        SQL_llm = llm.bind_tools(SQL_tools)
-
-        prompt_template = hub.pull("langchain-ai/sql-agent-system-prompt")
-        prompt_sql = prompt_template.format(
-            dialect=db.dialect,
-            top_k="this number is based on what user want in default use '10' but if user want 5 yse 5 if want more or less do it as user specifiy")
-
         question = state["messages"][-1].content
         history = state["history"]
-
-        messages = [
-            SystemMessage(content=prompt_sql),
-            HumanMessage(content=f"Query: {question}\n\nHistory: {history}"),
-        ]
-
-        MAX_ITERATIONS = 10 
-        iteration = 0
-
-        while iteration < MAX_ITERATIONS:
-            iteration += 1
-
-            response: AIMessage = SQL_llm.invoke(
-                messages,
-                config={"callbacks": [handler]},
-            )
-            messages.append(response)
-
-            if not response.tool_calls:
-                break
-
-            for tool_call in response.tool_calls:
-                tool_name = tool_call["name"]
-                tool_args = tool_call["args"]
-                tool_id   = tool_call["id"]
-
-                try:
-                    tool = tools_map[tool_name]
-                    tool_output = tool.invoke(tool_args)
-                except Exception as e:
-                    tool_output = f"Error executing tool: {str(e)}"
-                    
-                messages.append(
-                    ToolMessage(
-                        content=str(tool_output),
-                        tool_call_id=tool_id,
-                        name=tool_name,
-                    )
-                )
-
+        
+        responses = llm.invoke(
+            [
+                SystemMessage(content=f"{SQL_PROMPT} \n History: {history} \n SQL Schema; {SQL_SCHEMA}"),
+                HumanMessage(content=question)
+            ],
+            config={
+                    "callbacks": [handler],
+                    },
+        )
+        
+        if "N/A" in responses.content:
+            result = "Tidak pake SQL"
+            sql_missing = ""
         else:
-            response = AIMessage(content="EMPTY_RESULT")
-
+            result = sql_tool.invoke({"query": responses.content})
+            sql_missing = detect_missing_sql(result)
+            
         return {
-            "SQL_result": response.content,
+            "SQL_result": result,
+            "SQL_missing": sql_missing
         }
+
         
         
 def OMDB_agent(state: AgentState, config: RunnableConfig) -> AgentState:

@@ -39,6 +39,7 @@ def run_chatbot(chat_history: list) -> dict:
                     "messages": [HumanMessage(content=latest_query)], 
                     "history": past_history,                         
                     "SQL_result": "",
+                    "SQL_missing": "",
                     "RAG_result": "",
                     "OMDB_result": "",
                     "final_result": "",

@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
-from chatbot.config import retrive, rerank, url_omdb, api_omdb
+from sqlalchemy import text
+from chatbot.config import retrive, rerank, api_omdb, url_omdb, db
 import requests
 
 
@@ -21,20 +22,57 @@ def RAG_tool(query: str) -> str:
     
 tool_rag = [RAG_tool]
 
+@tool
+def sql_tool(query: str) -> str:
+    """This tools is used to execute sql query"""
+    with db.connect() as conn:
+        
+        result = conn.execute(text(query))
+
+        if not result.returns_rows:
+            return f"Query executed successfully. Rows affected: {result.rowcount}"
+
+        columns = list(result.keys())
+        rows = result.fetchall()
+
+    if not columns:
+        return "No results returned."
+
+    header = "| " + " | ".join(columns) + " |"
+    separator = "| " + " | ".join(["---"] * len(columns)) + " |"
+
+    body_lines = []
+    for row in rows:
+        formatted_row = []
+        for val in row:
+            if val is None:
+                formatted_row.append("")
+            else:
+                clean_val = str(val).replace("|", "\\|").replace("\n", " ")
+                formatted_row.append(clean_val)
+        body_lines.append("| " + " | ".join(formatted_row) + " |")
+
+    body = "\n".join(body_lines)
+    return f"{header}\n{separator}\n{body}"
+
+tool_sql = [sql_tool]
+    
 
 @tool
 def OMDB_tool(film_title: str) -> str:
     """"This tool for calling OMDB data when data from other source is null, none or NaN.
     Input FILM_title in specific """
     
-    url = url_omdb
+
+    if not url_omdb or not api_omdb:
+        return "OMDb tidak dikonfigurasi. Lewati pencarian OMDB."
 
     params = {
         "apikey": api_omdb,
         "t": film_title
     }
 
-    response = requests.get(url, params=params)
+    response = requests.get(url_omdb, params=params)
     
     # Jangan langsung response.json()! Lakukan pengecekan:
     if response.status_code != 200:
