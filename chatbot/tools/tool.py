@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from sqlalchemy import text
 from chatbot.config import retrive, rerank, api_omdb, url_omdb, db
+from chatbot.tools.markdown import format_rows_to_markdown
 import requests
 
 
@@ -38,22 +39,7 @@ def sql_tool(query: str) -> str:
     if not columns:
         return "No results returned."
 
-    header = "| " + " | ".join(columns) + " |"
-    separator = "| " + " | ".join(["---"] * len(columns)) + " |"
-
-    body_lines = []
-    for row in rows:
-        formatted_row = []
-        for val in row:
-            if val is None:
-                formatted_row.append("")
-            else:
-                clean_val = str(val).replace("|", "\\|").replace("\n", " ")
-                formatted_row.append(clean_val)
-        body_lines.append("| " + " | ".join(formatted_row) + " |")
-
-    body = "\n".join(body_lines)
-    return f"{header}\n{separator}\n{body}"
+    return format_rows_to_markdown(columns, rows)
 
 tool_sql = [sql_tool]
     

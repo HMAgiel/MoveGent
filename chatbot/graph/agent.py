@@ -7,6 +7,9 @@ from chatbot.prompt.agent_prompt import RAG_prompt, omdb_prompt, Data_prompt, ag
 
 from chatbot.tools.tool import RAG_tool, OMDB_tool, sql_tool
 
+from chatbot.graph.routing import apply_guardrails
+from chatbot.utils.sql_missing import detect_missing_sql
+
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage, AIMessage
 from langchain_core.runnables import RunnableConfig
 
@@ -96,41 +99,15 @@ def Data_agent(state: AgentState, config: RunnableConfig) -> AgentState:
         butuh_rag = result.get("needs_overview", False)
         sql_missing = state.get("SQL_missing", "")
 
-        if data_route == "OMDB_agent" and sql_results == "":
-            print("🚨 [Guardrail] OMDB dipilih tapi SQL belum jalan. Memaksa ke SQL_agent dulu.")
-            data_route = "SQL_agent"
+        data_route = apply_guardrails(
+            data_route,
+            sql_results=sql_results,
+            omdb_results=omdb_results,
+            rag_results=rag_results,
+            butuh_rag=butuh_rag,
+            sql_missing=sql_missing,
+        )
 
-        elif sql_results != "" and data_route == "SQL_agent":
-            if "No results returned." in sql_results or "EMPTY_RESULT" in sql_results: 
-                print("🚨 [Guardrail] Data kosong di SQL. Memaksa pindah ke Agregasi_agent.")
-                data_route = "Agregasi_agent"
-            else:
-                if butuh_rag == True and rag_results == "":
-                    print("🚨 [Guardrail] SQL selesai. Memaksa lanjut ke RAG_agent untuk overview.")
-                    data_route = "RAG_agent"
-                elif omdb_results == "" and sql_missing != "":
-                    print(f"🚨 [Guardrail] SQL selesai tapi ada data NULL ({sql_missing}). Lanjut ke OMDB_agent.")
-                    data_route = "OMDB_agent"
-                else:
-                    print("🚨 [Guardrail] SQL selesai dan data lengkap. Memaksa pindah ke Agregasi_agent.")
-                    data_route = "Agregasi_agent"
-
-        elif data_route == "OMDB_agent" and sql_missing == "":
-            print("🚨 [Guardrail] OMDB dipilih tapi data SQL lengkap. Memaksa pindah ke Agregasi_agent.")
-            data_route = "Agregasi_agent"
-
-        elif butuh_rag == True and rag_results == "" and data_route in ["Agregasi_agent", "OMDB_agent"]:
-            print("🚨 [Guardrail] Tunggu! User butuh overview, RAG belum jalan. Memaksa pindah ke RAG_agent.")
-            data_route = "RAG_agent"
-
-        elif omdb_results != "" and data_route in ["OMDB_agent", "SQL_agent"]:
-            print("🚨 [Guardrail] OMDB sudah dicoba. Memaksa pindah ke Agregasi_agent.")
-            data_route = "Agregasi_agent"
-            
-        elif rag_results != "" and data_route in ["RAG_agent", "SQL_agent", "OMDB_agent"]:
-            print("🚨 [Guardrail] RAG sudah dicoba. Memaksa pindah ke Agregasi_agent.")
-            data_route = "Agregasi_agent"
-                
         return {
             "data_worker": data_route
         }
@@ -174,22 +151,6 @@ def RAG_agent(state: AgentState, config: RunnableConfig) -> AgentState:
             "RAG_result": result
         }
         
-def detect_missing_sql(result: str) -> str:
-    """Deteksi kolom dengan nilai kosong/NULL/NaN pada hasil tabel markdown sql_tool."""
-    if not result or "No results returned." in result:
-        return ""
-    lines = [line for line in result.splitlines() if line.startswith("|")]
-    if len(lines) < 2:
-        return ""
-    headers = [h.strip() for h in lines[0].strip("|").split("|")]
-    missing = set()
-    for line in lines[2:]:
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        for header, value in zip(headers, cells):
-            if value in ("", "None", "NULL", "NaN", "nan"):
-                missing.add(header)
-    return ", ".join(sorted(missing)) if missing else ""
-
 def SQL_agent(state: AgentState, config: RunnableConfig) -> AgentState:
     llm = model_llm(temperature=0.1)
     session_id = config.get("configurable", {}).get("session_id", "default")
