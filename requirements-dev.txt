@@ -1,6 +1,0 @@
-# MovGent dev requirements (tooling only — NOT runtime)
-# Install: uv pip install -r requirements-dev.txt
-# Runtime deps tetap di requirements.txt
-
-# --- Testing ---
-pytest>=8.0.0
