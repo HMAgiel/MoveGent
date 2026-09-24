@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![LangChain](https://img.shields.io/badge/LangChain-1.2+-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain.com)
 [![LangGraph](https://img.shields.io/badge/LangGraph-1.1+-FF6F00?style=for-the-badge&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--5.6--luna-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
 [![Qdrant](https://img.shields.io/badge/Qdrant-Cloud-DC382D?style=for-the-badge&logo=qdrant&logoColor=white)](https://qdrant.tech)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
@@ -166,7 +166,7 @@ Capston3/
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **LLM** | GPT-4o-mini (OpenAI) | Reasoning, routing, aggregation |
+| **LLM** | GPT-5.6-luna (OpenAI) | Reasoning, routing, aggregation |
 | **Orchestration** | LangGraph | Stateful graph-based agent workflow |
 | **Framework** | LangChain | Agent tooling, SQL toolkit, prompt management |
 | **Vector DB** | Qdrant Cloud | Semantic search over movie overviews |
